@@ -1,0 +1,1 @@
+run = "make && PORT=8080 ./laf-server"

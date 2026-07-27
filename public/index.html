@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lost & Found</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="top-bar">
+      <div class="brand">Lost & Found</div>
+      <nav class="nav-buttons">
+        <a class="nav-link active" href="/">Browse</a>
+        <a class="nav-link" href="/report">Report</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h1>Browse items</h1>
+            <p class="subtext">Search reported lost and found items.</p>
+          </div>
+          <div class="status-pill">All items</div>
+        </div>
+
+        <div class="filters-row">
+          <div class="button-group">
+            <button class="filter-button active" data-filter="all">All</button>
+            <button class="filter-button" data-filter="Lost">Lost</button>
+            <button class="filter-button" data-filter="Found">Found</button>
+          </div>
+          <input id="searchInput" type="search" placeholder="Search items, locations..." />
+        </div>
+
+        <div class="category-row" id="categoryRow">
+          <button class="category-button active" data-category="All">All</button>
+          <button class="category-button" data-category="Electronics">Electronics</button>
+          <button class="category-button" data-category="Clothing">Clothing</button>
+          <button class="category-button" data-category="Books">Books</button>
+          <button class="category-button" data-category="Accessories">Accessories</button>
+          <button class="category-button" data-category="Sports">Sports</button>
+          <button class="category-button" data-category="Keys">Keys</button>
+          <button class="category-button" data-category="Other">Other</button>
+        </div>
+
+        <div class="item-count" id="itemCount">0 items found</div>
+        <div class="cards-grid" id="cardsGrid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="browse.js"></script>
+</body>
+</html>

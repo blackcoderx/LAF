@@ -1,0 +1,286 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f8f8f8;
+  color: #111;
+}
+
+.page-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
+
+.nav-link.active,
+.nav-link:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e3e3e3;
+  padding: 24px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.panel-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.subtext {
+  margin: 8px 0 0;
+  color: #5a5a5a;
+  max-width: 540px;
+}
+
+.status-pill {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f3f3f3;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.filters-row,
+.category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.filter-button,
+.category-button {
+  border: 1px solid #d1d1d1;
+  background: #fff;
+  color: #111;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.filter-button.active,
+.category-button.active {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+#searchInput {
+  flex: 1;
+  min-width: 240px;
+  padding: 12px 14px;
+  border: 1px solid #dcdcdc;
+  border-radius: 14px;
+  font-size: 1rem;
+}
+
+.item-count {
+  margin: 10px 0 14px;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.cards-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.card {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid #e3e3e3;
+  background: #fff;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 10px;
+  color: #5a5a5a;
+  font-size: 0.9rem;
+}
+
+.label {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.label.lost {
+  color: #a31f1f;
+  background: #fdecea;
+  border: 1px solid #f3c6c6;
+}
+
+.label.found {
+  color: #1e663a;
+  background: #ecf8f0;
+  border: 1px solid #b6e3c8;
+}
+
+.card-description,
+.card-location {
+  margin: 8px 0;
+  color: #4b4b4b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: #6b6b6b;
+  font-size: 0.9rem;
+}
+
+.panel-form {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.report-form {
+  display: grid;
+  gap: 16px;
+}
+
+.input-group {
+  display: grid;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.input-group span {
+  font-weight: 600;
+}
+
+.input-group input,
+.input-group textarea,
+.input-group select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #d6d6d6;
+  font-size: 1rem;
+  outline: none;
+}
+
+.input-group textarea {
+  resize: vertical;
+}
+
+.radio-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.radio-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.submit-button {
+  width: fit-content;
+  padding: 14px 22px;
+  border: none;
+  border-radius: 14px;
+  background: #111;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  opacity: 0.95;
+}
+
+.form-message {
+  color: #1e663a;
+  font-size: 0.95rem;
+}
+
+@media (min-width: 720px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .page-shell {
+    padding: 16px;
+  }
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filters-row,
+  .category-row,
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
