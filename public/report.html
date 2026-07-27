@@ -23,6 +23,7 @@
       <nav class="top-nav">
         <a class="nav-link" href="/">Browse</a>
         <a class="nav-link active" href="/report">Report</a>
+        <span id="authArea" class="auth-area"></span>
       </nav>
     </div>
   </header>
@@ -34,7 +35,12 @@
         <p>Submit a report and we'll add it to the board. If there's a match, the contact email you provide will be shared.</p>
       </div>
 
-      <form id="reportForm" class="report-form">
+      <div id="loginPrompt" class="empty-state hidden">
+        <p>You need to be logged in to report an item.</p>
+        <a class="submit-btn login-prompt-link" href="/login">Log in / Sign up</a>
+      </div>
+
+      <form id="reportForm" class="report-form hidden">
         <div class="field">
           <span class="field-label">I am reporting a</span>
           <div class="toggle-row">
@@ -102,9 +108,18 @@
   </main>
 
   <footer class="site-footer">
-    <p>Ghana Communication technology University· Lost &amp; Found · frontdesk@school.edu</p>
+    <div class="footer-inner">
+      <p>Ghana Communication technology University· Lost &amp; Found · frontdesk@school.edu</p>
+      <div class="footer-qr">
+        <div class="qr-box" id="footerQr"></div>
+        <p class="qr-caption">Scan to report an item</p>
+      </div>
+    </div>
   </footer>
 
+  <script src="qrcode.js"></script>
+  <script src="qr.js"></script>
+  <script src="auth.js"></script>
   <script src="report.js"></script>
 </body>
 </html>

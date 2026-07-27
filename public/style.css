@@ -130,6 +130,27 @@ a {
   color: var(--color-foreground);
 }
 
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 6px;
+  padding-left: 12px;
+  border-left: 1px solid var(--color-border);
+}
+
+.auth-greeting {
+  font-size: 13px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.auth-logout {
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
 /* ---------- Main ---------- */
 
 .page-main {
@@ -436,6 +457,12 @@ a {
   cursor: pointer;
 }
 
+.login-prompt-link {
+  display: inline-block;
+  margin-top: 16px;
+  text-decoration: none;
+}
+
 /* ---------- Report form ---------- */
 
 .form-wrap {
@@ -522,6 +549,12 @@ a {
   border-color: var(--color-lost);
 }
 
+.field input:read-only {
+  background: var(--color-card);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
 .field-error {
   font-size: 11px;
   color: var(--color-lost);
@@ -550,6 +583,12 @@ a {
   color: var(--color-muted);
   cursor: pointer;
   transition: all 0.15s;
+}
+
+.toggle-btn.active {
+  border-color: var(--color-foreground);
+  background: var(--color-card);
+  color: var(--color-foreground);
 }
 
 .toggle-btn.active[data-value="Lost"] {
@@ -650,12 +689,61 @@ a {
   display: none !important;
 }
 
+/* ---------- QR codes ---------- */
+
+.qr-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px;
+  line-height: 0;
+}
+
+.qr-box svg {
+  display: block;
+}
+
+.qr-caption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  margin: 4px 0 0;
+  text-transform: uppercase;
+}
+
+.card-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+
 /* ---------- Footer ---------- */
 
 .site-footer {
   border-top: 1px solid var(--color-border);
   padding: 20px;
+}
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
   text-align: center;
+}
+
+.footer-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .site-footer p {

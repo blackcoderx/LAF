@@ -23,6 +23,7 @@
       <nav class="top-nav">
         <a class="nav-link active" href="/">Browse</a>
         <a class="nav-link" href="/report">Report</a>
+        <span id="authArea" class="auth-area"></span>
       </nav>
     </div>
   </header>
@@ -67,9 +68,18 @@
   </main>
 
   <footer class="site-footer">
-    <p>Ghana Communication technology University · Lost &amp; Found · frontdesk@school.edu</p>
+    <div class="footer-inner">
+      <p>Ghana Communication technology University · Lost &amp; Found · frontdesk@school.edu</p>
+      <div class="footer-qr">
+        <div class="qr-box" id="footerQr"></div>
+        <p class="qr-caption">Scan to report an item</p>
+      </div>
+    </div>
   </footer>
 
+  <script src="qrcode.js"></script>
+  <script src="qr.js"></script>
+  <script src="auth.js"></script>
   <script src="browse.js"></script>
 </body>
 </html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in - Lost & Found</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">Lost &amp; Found</span>
+          <span class="brand-sub">Campus lost and found board</span>
+        </div>
+      </div>
+      <nav class="top-nav">
+        <a class="nav-link" href="/">Browse</a>
+        <a class="nav-link" href="/report">Report</a>
+        <span id="authArea" class="auth-area"></span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="form-wrap">
+      <div class="form-header">
+        <h1>Log in or sign up</h1>
+        <p>You need an account to report a lost or found item. Browsing the board doesn't require one.</p>
+      </div>
+
+      <div class="toggle-row">
+        <button type="button" class="toggle-btn active" data-mode="login">Log in</button>
+        <button type="button" class="toggle-btn" data-mode="signup">Sign up</button>
+      </div>
+
+      <form id="loginForm" class="report-form auth-form">
+        <div class="field" id="loginFieldEmail">
+          <label class="field-label" for="loginEmail">Email *</label>
+          <input id="loginEmail" name="email" type="email" placeholder="your@school.edu" required />
+          <span class="field-error hidden">Required</span>
+        </div>
+        <div class="field" id="loginFieldPassword">
+          <label class="field-label" for="loginPassword">Password *</label>
+          <input id="loginPassword" name="password" type="password" placeholder="••••••••" required />
+          <span class="field-error hidden">Required</span>
+        </div>
+        <button class="submit-btn" type="submit">Log in</button>
+        <p id="loginFormError" class="form-error hidden"></p>
+      </form>
+
+      <form id="signupForm" class="report-form auth-form hidden">
+        <div class="field" id="signupFieldName">
+          <label class="field-label" for="signupName">Student name *</label>
+          <input id="signupName" name="name" type="text" placeholder="e.g. Jordan Mensah" required />
+          <span class="field-error hidden">Required</span>
+        </div>
+        <div class="field" id="signupFieldPhone">
+          <label class="field-label" for="signupPhone">Phone number *</label>
+          <input id="signupPhone" name="phone" type="tel" placeholder="e.g. 0551234567" required />
+          <span class="field-error hidden">Required</span>
+        </div>
+        <div class="field" id="signupFieldEmail">
+          <label class="field-label" for="signupEmail">Email *</label>
+          <input id="signupEmail" name="email" type="email" placeholder="your@school.edu" required />
+          <span class="field-error hidden">Required</span>
+        </div>
+        <div class="field" id="signupFieldPassword">
+          <label class="field-label" for="signupPassword">Password *</label>
+          <input id="signupPassword" name="password" type="password" placeholder="••••••••" required />
+          <span class="field-error hidden">Required</span>
+        </div>
+        <button class="submit-btn" type="submit">Sign up</button>
+        <p id="signupFormError" class="form-error hidden"></p>
+      </form>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>Ghana Communication technology University · Lost &amp; Found · frontdesk@school.edu</p>
+      <div class="footer-qr">
+        <div class="qr-box" id="footerQr"></div>
+        <p class="qr-caption">Scan to report an item</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="qrcode.js"></script>
+  <script src="qr.js"></script>
+  <script src="auth.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

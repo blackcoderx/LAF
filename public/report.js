@@ -1,4 +1,6 @@
 const form = document.getElementById('reportForm');
+const loginPrompt = document.getElementById('loginPrompt');
+const emailInput = document.getElementById('email');
 const successState = document.getElementById('successState');
 const formError = document.getElementById('formError');
 const toggleButtons = document.querySelectorAll('.toggle-btn');
@@ -97,3 +99,16 @@ document.getElementById('submitAnother').addEventListener('click', () => {
   successState.classList.add('hidden');
   form.classList.remove('hidden');
 });
+
+fetchMe().then((me) => {
+  if (me.loggedIn) {
+    emailInput.value = me.email;
+    emailInput.readOnly = true;
+    form.classList.remove('hidden');
+  } else {
+    loginPrompt.classList.remove('hidden');
+  }
+});
+
+mountAuthNav();
+mountFooterQr();

@@ -8,11 +8,14 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
 
 const std::string DATA_FILE = "data/items.csv";
+const std::string USERS_FILE = "data/users.csv";
 
 struct Item {
     int id;
@@ -24,6 +27,17 @@ struct Item {
     std::string description;
     std::string email;
 };
+
+struct User {
+    int id;
+    std::string name;
+    std::string phone;
+    std::string email;
+    std::string password;
+};
+
+// token -> user id. In-memory only: sessions are lost on server restart.
+std::map<std::string, int> sessions;
 
 std::string urlDecode(const std::string& value) {
     std::string result;
@@ -41,6 +55,23 @@ std::string urlDecode(const std::string& value) {
         }
     }
     return result;
+}
+
+std::string jsonEscape(const std::string& value) {
+    std::string out;
+    out.reserve(value.size());
+    for (char c : value) {
+        if (c == '"' || c == '\\') out.push_back('\\');
+        out.push_back(c);
+    }
+    return out;
+}
+
+std::string generateToken() {
+    static std::mt19937_64 rng(std::random_device{}());
+    std::ostringstream oss;
+    oss << std::hex << rng() << rng();
+    return oss.str();
 }
 
 std::vector<Item> loadItems() {
@@ -84,6 +115,48 @@ void saveItem(const Item& item) {
          << item.email << "\n";
 }
 
+std::vector<User> loadUsers() {
+    std::vector<User> users;
+    std::ifstream file(USERS_FILE);
+    if (!file.is_open()) {
+        return users;
+    }
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        std::istringstream row(line);
+        User user;
+        std::string idStr;
+        std::getline(row, idStr, ',');
+        std::getline(row, user.name, ',');
+        std::getline(row, user.phone, ',');
+        std::getline(row, user.email, ',');
+        std::getline(row, user.password, ',');
+        user.id = std::stoi(idStr);
+        users.push_back(user);
+    }
+    return users;
+}
+
+void saveUser(const User& user) {
+    std::ofstream file(USERS_FILE, std::ios::app);
+    if (!file.is_open()) {
+        return;
+    }
+    file << user.id << ","
+         << user.name << ","
+         << user.phone << ","
+         << user.email << ","
+         << user.password << "\n";
+}
+
+User* findUserByEmail(std::vector<User>& users, const std::string& email) {
+    for (auto& user : users) {
+        if (user.email == email) return &user;
+    }
+    return nullptr;
+}
+
 std::string readFile(const std::string& path) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -101,11 +174,12 @@ std::string getContentType(const std::string& path) {
     return "text/plain";
 }
 
-std::string buildHttpResponse(const std::string& body, const std::string& contentType, int status = 200) {
+std::string buildHttpResponse(const std::string& body, const std::string& contentType, int status = 200, const std::string& extraHeaders = "") {
     std::ostringstream response;
     response << "HTTP/1.1 " << status << " OK\r\n";
     response << "Content-Type: " << contentType << "; charset=UTF-8\r\n";
     response << "Content-Length: " << body.size() << "\r\n";
+    response << extraHeaders;
     response << "Connection: close\r\n";
     response << "\r\n";
     response << body;
@@ -139,6 +213,36 @@ std::string parseBodyValue(const std::string& body, const std::string& key) {
     size_t end = body.find('&', start);
     std::string raw = body.substr(start, end - start);
     return urlDecode(raw);
+}
+
+std::string getCookieValue(const std::string& request, const std::string& key) {
+    size_t headerEnd = request.find("\r\n\r\n");
+    std::string headers = headerEnd != std::string::npos ? request.substr(0, headerEnd) : request;
+    size_t cookiePos = headers.find("Cookie:");
+    if (cookiePos == std::string::npos) return "";
+    size_t lineStart = cookiePos + 7;
+    size_t lineEnd = headers.find("\r\n", lineStart);
+    std::string cookieLine = headers.substr(lineStart, (lineEnd == std::string::npos ? headers.size() : lineEnd) - lineStart);
+
+    size_t pos = cookieLine.find(key + "=");
+    if (pos == std::string::npos) return "";
+    size_t start = pos + key.size() + 1;
+    size_t end = cookieLine.find(';', start);
+    std::string value = cookieLine.substr(start, end - start);
+    while (!value.empty() && value.front() == ' ') value.erase(value.begin());
+    while (!value.empty() && (value.back() == ' ' || value.back() == '\r')) value.pop_back();
+    return value;
+}
+
+User* getSessionUser(const std::string& request, std::vector<User>& users) {
+    std::string token = getCookieValue(request, "session");
+    if (token.empty()) return nullptr;
+    auto it = sessions.find(token);
+    if (it == sessions.end()) return nullptr;
+    for (auto& user : users) {
+        if (user.id == it->second) return &user;
+    }
+    return nullptr;
 }
 
 void ensureSampleData() {
@@ -213,9 +317,19 @@ int main() {
             } else if (path == "/report") {
                 std::string body = readFile("public/report.html");
                 response = buildHttpResponse(body, "text/html");
+            } else if (path == "/login") {
+                std::string body = readFile("public/login.html");
+                response = buildHttpResponse(body, "text/html");
             } else if (path == "/api/items") {
                 std::vector<Item> items = loadItems();
                 std::string body = buildJsonItems(items);
+                response = buildHttpResponse(body, "application/json");
+            } else if (path == "/api/me") {
+                std::vector<User> users = loadUsers();
+                User* user = getSessionUser(request, users);
+                std::string body = user
+                    ? "{\"loggedIn\":true,\"name\":\"" + jsonEscape(user->name) + "\",\"email\":\"" + jsonEscape(user->email) + "\"}"
+                    : "{\"loggedIn\":false}";
                 response = buildHttpResponse(body, "application/json");
             } else {
                 std::string filePath = "public" + path;
@@ -226,27 +340,79 @@ int main() {
                     response = buildHttpResponse(body, getContentType(filePath));
                 }
             }
-        } else if (method == "POST" && path == "/api/items") {
+        } else if (method == "POST") {
             std::string body;
             size_t headerEnd = request.find("\r\n\r\n");
             if (headerEnd != std::string::npos) {
                 body = request.substr(headerEnd + 4);
             }
-            Item item;
-            std::vector<Item> items = loadItems();
-            item.id = items.empty() ? 1 : items.back().id + 1;
-            item.name = parseBodyValue(body, "name");
-            item.type = parseBodyValue(body, "type");
-            item.category = parseBodyValue(body, "category");
-            item.location = parseBodyValue(body, "location");
-            item.description = parseBodyValue(body, "description");
-            item.email = parseBodyValue(body, "email");
-            item.date = parseBodyValue(body, "date");
-            if (item.date.empty()) {
-                item.date = "2026-07-27";
+
+            if (path == "/api/items") {
+                std::vector<User> users = loadUsers();
+                User* sessionUser = getSessionUser(request, users);
+                if (!sessionUser) {
+                    response = buildHttpResponse("{\"status\":\"error\",\"message\":\"Please log in to report an item.\"}", "application/json");
+                } else {
+                    Item item;
+                    std::vector<Item> items = loadItems();
+                    item.id = items.empty() ? 1 : items.back().id + 1;
+                    item.name = parseBodyValue(body, "name");
+                    item.type = parseBodyValue(body, "type");
+                    item.category = parseBodyValue(body, "category");
+                    item.location = parseBodyValue(body, "location");
+                    item.description = parseBodyValue(body, "description");
+                    item.email = parseBodyValue(body, "email");
+                    item.date = parseBodyValue(body, "date");
+                    if (item.date.empty()) {
+                        item.date = "2026-07-27";
+                    }
+                    saveItem(item);
+                    response = buildHttpResponse("{\"status\":\"saved\"}", "application/json");
+                }
+            } else if (path == "/api/signup") {
+                std::string name = parseBodyValue(body, "name");
+                std::string phone = parseBodyValue(body, "phone");
+                std::string email = parseBodyValue(body, "email");
+                std::string password = parseBodyValue(body, "password");
+                std::vector<User> users = loadUsers();
+                if (name.empty() || phone.empty() || email.empty() || password.empty()) {
+                    response = buildHttpResponse("{\"status\":\"error\",\"message\":\"Please fill in all fields.\"}", "application/json");
+                } else if (findUserByEmail(users, email) != nullptr) {
+                    response = buildHttpResponse("{\"status\":\"error\",\"message\":\"Email already registered\"}", "application/json");
+                } else {
+                    User user;
+                    user.id = users.empty() ? 1 : users.back().id + 1;
+                    user.name = name;
+                    user.phone = phone;
+                    user.email = email;
+                    user.password = password;
+                    saveUser(user);
+                    std::string token = generateToken();
+                    sessions[token] = user.id;
+                    std::string cookie = "Set-Cookie: session=" + token + "; Path=/; HttpOnly\r\n";
+                    response = buildHttpResponse("{\"status\":\"saved\"}", "application/json", 200, cookie);
+                }
+            } else if (path == "/api/login") {
+                std::string email = parseBodyValue(body, "email");
+                std::string password = parseBodyValue(body, "password");
+                std::vector<User> users = loadUsers();
+                User* user = findUserByEmail(users, email);
+                if (user == nullptr || user->password != password) {
+                    response = buildHttpResponse("{\"status\":\"error\",\"message\":\"Invalid email or password\"}", "application/json");
+                } else {
+                    std::string token = generateToken();
+                    sessions[token] = user->id;
+                    std::string cookie = "Set-Cookie: session=" + token + "; Path=/; HttpOnly\r\n";
+                    response = buildHttpResponse("{\"status\":\"ok\"}", "application/json", 200, cookie);
+                }
+            } else if (path == "/api/logout") {
+                std::string token = getCookieValue(request, "session");
+                if (!token.empty()) sessions.erase(token);
+                std::string cookie = "Set-Cookie: session=; Path=/; Max-Age=0; HttpOnly\r\n";
+                response = buildHttpResponse("{\"status\":\"ok\"}", "application/json", 200, cookie);
+            } else {
+                response = buildHttpResponse("Not Found", "text/plain", 404);
             }
-            saveItem(item);
-            response = buildHttpResponse("{\"status\":\"saved\"}", "application/json");
         } else {
             response = buildHttpResponse("Not Found", "text/plain", 404);
         }

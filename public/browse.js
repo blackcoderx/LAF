@@ -16,8 +16,33 @@ function fetchItems() {
       items = data;
       updateCounts();
       renderItems();
+      focusItemFromHash();
     });
 }
+
+function focusItemFromHash() {
+  const match = location.hash.match(/^#item=(\d+)$/);
+  if (!match) return;
+  const targetId = match[1];
+
+  const alreadyVisible = cardsGrid.querySelector(`.card[data-item-id="${targetId}"]`);
+  if (!alreadyVisible) {
+    searchQuery = '';
+    activeCategory = 'All';
+    activeFilter = 'all';
+    searchInput.value = '';
+    document.querySelectorAll('.category-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.category === 'All'));
+    filterButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.filter === 'all'));
+    renderItems();
+  }
+
+  const card = cardsGrid.querySelector(`.card[data-item-id="${targetId}"]`);
+  if (!card) return;
+  card.setExpanded(true);
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+window.addEventListener('hashchange', focusItemFromHash);
 
 function updateCounts() {
   const lostCount = items.filter((item) => item.type === 'Lost').length;
@@ -40,6 +65,7 @@ const EMPTY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 function buildCard(item) {
   const card = document.createElement('div');
   card.className = 'card';
+  card.dataset.itemId = String(item.id);
 
   const top = document.createElement('div');
   top.className = 'card-top';
@@ -90,8 +116,19 @@ function buildCard(item) {
   contactLink.appendChild(document.createTextNode(item.email));
   contactLink.addEventListener('click', (event) => event.stopPropagation());
 
+  const qrWrap = document.createElement('div');
+  qrWrap.className = 'card-qr';
+  const qrBox = document.createElement('div');
+  qrBox.className = 'qr-box';
+  const qrCaption = document.createElement('p');
+  qrCaption.className = 'qr-caption';
+  qrCaption.textContent = 'Scan to open this item';
+  qrWrap.appendChild(qrBox);
+  qrWrap.appendChild(qrCaption);
+
   details.appendChild(description);
   details.appendChild(contactLink);
+  details.appendChild(qrWrap);
 
   const hint = document.createElement('p');
   hint.className = 'card-hint';
@@ -103,10 +140,19 @@ function buildCard(item) {
   card.appendChild(details);
   card.appendChild(hint);
 
-  card.addEventListener('click', () => {
-    card.classList.toggle('expanded');
-    hint.textContent = card.classList.contains('expanded') ? 'Click to collapse' : 'Click for details & contact';
-  });
+  let qrRendered = false;
+  function setExpanded(expanded) {
+    card.classList.toggle('expanded', expanded);
+    hint.textContent = expanded ? 'Click to collapse' : 'Click for details & contact';
+    if (expanded && !qrRendered) {
+      const url = `${location.origin}${location.pathname}#item=${item.id}`;
+      qrBox.innerHTML = buildQrSvg(url, 72);
+      qrRendered = true;
+    }
+  }
+  card.setExpanded = setExpanded;
+
+  card.addEventListener('click', () => setExpanded(!card.classList.contains('expanded')));
 
   return card;
 }
@@ -181,3 +227,5 @@ searchInput.addEventListener('input', (event) => {
 });
 
 fetchItems();
+mountAuthNav();
+mountFooterQr();
