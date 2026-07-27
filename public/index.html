@@ -7,50 +7,68 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="page-shell">
-    <header class="top-bar">
-      <div class="brand">Lost & Found</div>
-      <nav class="nav-buttons">
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">Lost &amp; Found</span>
+          <span class="brand-sub">Campus lost and found board</span>
+        </div>
+      </div>
+      <nav class="top-nav">
         <a class="nav-link active" href="/">Browse</a>
         <a class="nav-link" href="/report">Report</a>
       </nav>
-    </header>
+    </div>
+  </header>
 
-    <main>
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h1>Browse items</h1>
-            <p class="subtext">Search reported lost and found items.</p>
-          </div>
-          <div class="status-pill">All items</div>
-        </div>
+  <main class="page-main">
+    <div class="stats-row">
+      <button class="stat-btn active" data-filter="all">
+        <span>All items</span>
+        <span class="count" id="countAll">0</span>
+      </button>
+      <button class="stat-btn" data-filter="Lost">
+        <span>Lost</span>
+        <span class="count" id="countLost">0</span>
+      </button>
+      <button class="stat-btn" data-filter="Found">
+        <span>Found</span>
+        <span class="count" id="countFound">0</span>
+      </button>
+    </div>
 
-        <div class="filters-row">
-          <div class="button-group">
-            <button class="filter-button active" data-filter="all">All</button>
-            <button class="filter-button" data-filter="Lost">Lost</button>
-            <button class="filter-button" data-filter="Found">Found</button>
-          </div>
-          <input id="searchInput" type="search" placeholder="Search items, locations..." />
-        </div>
+    <div class="filters-row">
+      <div class="search-box">
+        <svg class="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input id="searchInput" type="search" placeholder="Search items, locations..." aria-label="Search items and locations" />
+      </div>
+      <div class="category-row" id="categoryRow">
+        <button class="category-btn active" data-category="All">All</button>
+        <button class="category-btn" data-category="Electronics">Electronics</button>
+        <button class="category-btn" data-category="Clothing">Clothing</button>
+        <button class="category-btn" data-category="Books">Books</button>
+        <button class="category-btn" data-category="Accessories">Accessories</button>
+        <button class="category-btn" data-category="Sports">Sports</button>
+        <button class="category-btn" data-category="Keys">Keys</button>
+        <button class="category-btn" data-category="Other">Other</button>
+      </div>
+    </div>
 
-        <div class="category-row" id="categoryRow">
-          <button class="category-button active" data-category="All">All</button>
-          <button class="category-button" data-category="Electronics">Electronics</button>
-          <button class="category-button" data-category="Clothing">Clothing</button>
-          <button class="category-button" data-category="Books">Books</button>
-          <button class="category-button" data-category="Accessories">Accessories</button>
-          <button class="category-button" data-category="Sports">Sports</button>
-          <button class="category-button" data-category="Keys">Keys</button>
-          <button class="category-button" data-category="Other">Other</button>
-        </div>
+    <p class="results-copy" id="resultsCopy">0 items found</p>
+    <div class="items-grid" id="cardsGrid"></div>
+  </main>
 
-        <div class="item-count" id="itemCount">0 items found</div>
-        <div class="cards-grid" id="cardsGrid"></div>
-      </section>
-    </main>
-  </div>
+  <footer class="site-footer">
+    <p>Ghana Communication technology University · Lost &amp; Found · frontdesk@school.edu</p>
+  </footer>
 
   <script src="browse.js"></script>
 </body>

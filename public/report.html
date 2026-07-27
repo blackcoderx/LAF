@@ -7,41 +7,53 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="page-shell">
-    <header class="top-bar">
-      <div class="brand">Lost & Found</div>
-      <nav class="nav-buttons">
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">Lost &amp; Found</span>
+          <span class="brand-sub">Campus lost and found board</span>
+        </div>
+      </div>
+      <nav class="top-nav">
         <a class="nav-link" href="/">Browse</a>
         <a class="nav-link active" href="/report">Report</a>
       </nav>
-    </header>
+    </div>
+  </header>
 
-    <main>
-      <section class="panel panel-form">
-        <div class="panel-header">
-          <div>
-            <h1>Report an item</h1>
-            <p class="subtext">Submit a report and we will add it to the board.</p>
+  <main class="page-main">
+    <div class="form-wrap">
+      <div class="form-header">
+        <h1>Report an item</h1>
+        <p>Submit a report and we'll add it to the board. If there's a match, the contact email you provide will be shared.</p>
+      </div>
+
+      <form id="reportForm" class="report-form">
+        <div class="field">
+          <span class="field-label">I am reporting a</span>
+          <div class="toggle-row">
+            <button type="button" class="toggle-btn active" data-value="Lost">🔍 Lost Item</button>
+            <button type="button" class="toggle-btn" data-value="Found">📦 Found Item</button>
           </div>
+          <input type="hidden" name="type" value="Lost" />
         </div>
 
-        <form id="reportForm" class="report-form">
-          <label class="input-group">
-            <span>I am reporting a</span>
-            <div class="radio-row">
-              <label><input type="radio" name="type" value="Lost" checked /> Lost Item</label>
-              <label><input type="radio" name="type" value="Found" /> Found Item</label>
-            </div>
-          </label>
+        <div class="field" id="fieldName">
+          <label class="field-label" for="itemName">Item name *</label>
+          <input id="itemName" name="name" type="text" placeholder="e.g. Black backpack, AirPods case..." required />
+          <span class="field-error hidden">Required</span>
+        </div>
 
-          <label class="input-group">
-            <span>Item name *</span>
-            <input type="text" name="name" placeholder="e.g. Black backpack, AirPods case..." required />
-          </label>
-
-          <label class="input-group">
-            <span>Category</span>
-            <select name="category">
+        <div class="field-row-2">
+          <div class="field">
+            <label class="field-label" for="category">Category</label>
+            <select id="category" name="category">
               <option>Other</option>
               <option>Electronics</option>
               <option>Clothing</option>
@@ -50,29 +62,48 @@
               <option>Sports</option>
               <option>Keys</option>
             </select>
-          </label>
+          </div>
+          <div class="field" id="fieldLocation">
+            <label class="field-label" for="location">Location *</label>
+            <input id="location" name="location" type="text" placeholder="e.g. Library, Room 204..." required />
+            <span class="field-error hidden">Required</span>
+          </div>
+        </div>
 
-          <label class="input-group">
-            <span>Location *</span>
-            <input type="text" name="location" placeholder="e.g. Library, Room 204..." required />
-          </label>
+        <div class="field" id="fieldDescription">
+          <label class="field-label" for="description">Description *</label>
+          <textarea id="description" name="description" rows="5" placeholder="Color, size, identifying marks, brand, serial number..." required></textarea>
+          <span class="field-error hidden">Required</span>
+        </div>
 
-          <label class="input-group">
-            <span>Description *</span>
-            <textarea name="description" rows="4" placeholder="Color, size, identifying marks, brand, serial number..." required></textarea>
-          </label>
+        <div class="field" id="fieldEmail">
+          <label class="field-label" for="email">Contact email *</label>
+          <input id="email" name="email" type="email" placeholder="your@school.edu" required />
+          <span class="field-error hidden">Required</span>
+        </div>
 
-          <label class="input-group">
-            <span>Contact email *</span>
-            <input type="email" name="email" placeholder="you@example.com" required />
-          </label>
+        <button class="submit-btn" type="submit">Submit report</button>
+        <p id="formError" class="form-error hidden"></p>
+      </form>
 
-          <button class="submit-button" type="submit">Submit report</button>
-          <div id="formMessage" class="form-message"></div>
-        </form>
-      </section>
-    </main>
-  </div>
+      <div id="successState" class="success-state hidden">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div>
+          <h3>Report submitted</h3>
+          <p>Your item has been added to the board. Someone will be in touch if there's a match.</p>
+        </div>
+        <button type="button" class="success-again" id="submitAnother">Submit another</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>Ghana Communication technology University· Lost &amp; Found · frontdesk@school.edu</p>
+  </footer>
 
   <script src="report.js"></script>
 </body>
