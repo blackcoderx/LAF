@@ -1,9 +1,22 @@
-#include <arpa/inet.h>
+// Lost & Found web server
+// -------------------------
+// A small, dependency-free HTTP server written directly on top of POSIX
+// (Berkeley) sockets. There is no web framework here: this file opens a
+// TCP socket, accepts one connection at a time, reads the raw HTTP request
+// text, decides what to do based on the method + path, and writes a raw
+// HTTP response back. Everything is stored in plain CSV files under data/.
+//
+// POSIX sockets (arpa/inet.h, sys/socket.h, netinet/in.h, unistd.h) are a
+// Linux/macOS API, so this file compiles and runs as-is on Linux/macOS or
+// inside WSL on Windows. See the "Running on Windows" section in README.md
+// for how to run it there without changing any code.
+
+#include <arpa/inet.h>   // sockaddr_in, htons, INADDR_ANY
 #include <fcntl.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <netinet/in.h>  // AF_INET, SOCK_STREAM
+#include <sys/socket.h>  // socket(), bind(), listen(), accept(), send(), recv()
+#include <sys/stat.h>    // stat() - used to check whether items.csv already exists
+#include <unistd.h>      // close()
 
 #include <cstring>
 #include <fstream>
@@ -14,20 +27,26 @@
 #include <string>
 #include <vector>
 
+// Where the two "tables" of data live on disk. There's no real database -
+// each file is just comma-separated rows, appended to as new rows arrive.
 const std::string DATA_FILE = "data/items.csv";
 const std::string USERS_FILE = "data/users.csv";
 
+// One reported lost/found item. Mirrors one line of data/items.csv.
 struct Item {
     int id;
     std::string name;
-    std::string type;
+    std::string type;        // "Lost" or "Found"
     std::string category;
     std::string location;
     std::string date;
     std::string description;
-    std::string email;
+    std::string email;       // contact email shown on the item's card
 };
 
+// One registered student account. Mirrors one line of data/users.csv.
+// NOTE: password is stored as plain text, by design, to keep this beginner
+// project simple - see README.md for the trade-off this implies.
 struct User {
     int id;
     std::string name;
@@ -36,9 +55,15 @@ struct User {
     std::string password;
 };
 
-// token -> user id. In-memory only: sessions are lost on server restart.
+// Logged-in sessions, kept only in memory: token -> user id.
+// This works because the server handles one request at a time (see the
+// accept loop in main()), so there's no risk of two requests touching this
+// map at once. Restarting the server forgets every session, which is fine
+// for a small class project.
 std::map<std::string, int> sessions;
 
+// Decodes an application/x-www-form-urlencoded value, e.g. turns
+// "black%20backpack" into "black backpack" and "+" into a space.
 std::string urlDecode(const std::string& value) {
     std::string result;
     result.reserve(value.size());
@@ -57,6 +82,8 @@ std::string urlDecode(const std::string& value) {
     return result;
 }
 
+// Escapes '"' and '\' so a string can be safely dropped into a hand-built
+// JSON response (see buildJsonItems / the /api/me handler below).
 std::string jsonEscape(const std::string& value) {
     std::string out;
     out.reserve(value.size());
@@ -67,6 +94,7 @@ std::string jsonEscape(const std::string& value) {
     return out;
 }
 
+// Creates a random hex string to use as a session token/cookie value.
 std::string generateToken() {
     static std::mt19937_64 rng(std::random_device{}());
     std::ostringstream oss;
@@ -74,11 +102,13 @@ std::string generateToken() {
     return oss.str();
 }
 
+// Reads every row out of data/items.csv into memory.
+// CSV format per line: id,name,type,category,location,date,description,email
 std::vector<Item> loadItems() {
     std::vector<Item> items;
     std::ifstream file(DATA_FILE);
     if (!file.is_open()) {
-        return items;
+        return items;  // no file yet = no items yet
     }
     std::string line;
     while (std::getline(file, line)) {
@@ -100,6 +130,7 @@ std::vector<Item> loadItems() {
     return items;
 }
 
+// Appends one item as a new line at the end of data/items.csv.
 void saveItem(const Item& item) {
     std::ofstream file(DATA_FILE, std::ios::app);
     if (!file.is_open()) {
@@ -115,11 +146,14 @@ void saveItem(const Item& item) {
          << item.email << "\n";
 }
 
+// Reads every row out of data/users.csv into memory.
+// CSV format per line: id,name,phone,email,password
+// (Same append-only pattern as loadItems/saveItem above.)
 std::vector<User> loadUsers() {
     std::vector<User> users;
     std::ifstream file(USERS_FILE);
     if (!file.is_open()) {
-        return users;
+        return users;  // no signups yet
     }
     std::string line;
     while (std::getline(file, line)) {
@@ -138,6 +172,9 @@ std::vector<User> loadUsers() {
     return users;
 }
 
+// Appends one new account as a line at the end of data/users.csv.
+// Note this also *creates* the file the first time someone signs up -
+// ofstream with ios::app makes the file if it doesn't already exist.
 void saveUser(const User& user) {
     std::ofstream file(USERS_FILE, std::ios::app);
     if (!file.is_open()) {
@@ -150,6 +187,8 @@ void saveUser(const User& user) {
          << user.password << "\n";
 }
 
+// Simple linear search for a user by email (there's no index/database -
+// the user list is small enough that this is plenty fast).
 User* findUserByEmail(std::vector<User>& users, const std::string& email) {
     for (auto& user : users) {
         if (user.email == email) return &user;
@@ -157,6 +196,8 @@ User* findUserByEmail(std::vector<User>& users, const std::string& email) {
     return nullptr;
 }
 
+// Reads a whole file (e.g. an HTML page) into a string. Returns "" if the
+// file doesn't exist, which the caller treats as a 404.
 std::string readFile(const std::string& path) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -167,6 +208,8 @@ std::string readFile(const std::string& path) {
     return content.str();
 }
 
+// Picks a Content-Type header based on the file extension, so the browser
+// knows how to treat static files served out of public/.
 std::string getContentType(const std::string& path) {
     if (path.find(".css") != std::string::npos) return "text/css";
     if (path.find(".js") != std::string::npos) return "application/javascript";
@@ -174,6 +217,10 @@ std::string getContentType(const std::string& path) {
     return "text/plain";
 }
 
+// Builds a complete raw HTTP response (status line + headers + body) as one
+// string, ready to send() straight to the socket. `extraHeaders` lets a
+// caller attach extra lines like "Set-Cookie: ...\r\n" (must include the
+// trailing \r\n itself).
 std::string buildHttpResponse(const std::string& body, const std::string& contentType, int status = 200, const std::string& extraHeaders = "") {
     std::ostringstream response;
     response << "HTTP/1.1 " << status << " OK\r\n";
@@ -186,6 +233,10 @@ std::string buildHttpResponse(const std::string& body, const std::string& conten
     return response.str();
 }
 
+// Turns the list of items into a JSON array string for GET /api/items.
+// (Hand-rolled JSON - fine here since item fields don't normally contain
+// quote characters, but note this doesn't escape them the way jsonEscape
+// does for the newer /api/me endpoint below.)
 std::string buildJsonItems(const std::vector<Item>& items) {
     std::ostringstream json;
     json << "[";
@@ -193,12 +244,12 @@ std::string buildJsonItems(const std::vector<Item>& items) {
         const Item& item = items[i];
         json << "{"
              << "\"id\":" << item.id << ","
-             << "\"name\":\"" << item.name << "\"," 
-             << "\"type\":\"" << item.type << "\"," 
-             << "\"category\":\"" << item.category << "\"," 
-             << "\"location\":\"" << item.location << "\"," 
-             << "\"date\":\"" << item.date << "\"," 
-             << "\"description\":\"" << item.description << "\"," 
+             << "\"name\":\"" << item.name << "\","
+             << "\"type\":\"" << item.type << "\","
+             << "\"category\":\"" << item.category << "\","
+             << "\"location\":\"" << item.location << "\","
+             << "\"date\":\"" << item.date << "\","
+             << "\"description\":\"" << item.description << "\","
              << "\"email\":\"" << item.email << "\"}"
              << (i + 1 < items.size() ? "," : "");
     }
@@ -206,6 +257,8 @@ std::string buildJsonItems(const std::vector<Item>& items) {
     return json.str();
 }
 
+// Pulls one field out of an "a=1&b=2&c=3" style POST body (the format
+// the browser sends for application/x-www-form-urlencoded forms).
 std::string parseBodyValue(const std::string& body, const std::string& key) {
     size_t pos = body.find(key + "=");
     if (pos == std::string::npos) return "";
@@ -215,6 +268,11 @@ std::string parseBodyValue(const std::string& body, const std::string& key) {
     return urlDecode(raw);
 }
 
+// Pulls one cookie value out of the raw request text, e.g. given a
+// "Cookie: session=abc123; other=x" header and key="session", returns
+// "abc123". The request parsing in main() only reads the method/path
+// (see requestStream >> method >> path below) and ignores headers
+// otherwise, so this is the one place headers actually get read.
 std::string getCookieValue(const std::string& request, const std::string& key) {
     size_t headerEnd = request.find("\r\n\r\n");
     std::string headers = headerEnd != std::string::npos ? request.substr(0, headerEnd) : request;
@@ -234,6 +292,11 @@ std::string getCookieValue(const std::string& request, const std::string& key) {
     return value;
 }
 
+// Looks at the request's "session" cookie and, if it matches a live
+// session, returns a pointer to that logged-in user (else nullptr).
+// This is what "being logged in" means throughout this file - there's no
+// separate concept of an authenticated request beyond "has a valid
+// session cookie that's in the `sessions` map".
 User* getSessionUser(const std::string& request, std::vector<User>& users) {
     std::string token = getCookieValue(request, "session");
     if (token.empty()) return nullptr;
@@ -245,6 +308,8 @@ User* getSessionUser(const std::string& request, std::vector<User>& users) {
     return nullptr;
 }
 
+// On first run there's no data/items.csv yet, so seed it with a few
+// example items to make the app worth looking at immediately.
 void ensureSampleData() {
     struct stat buffer;
     if (stat(DATA_FILE.c_str(), &buffer) != 0) {
@@ -258,35 +323,45 @@ void ensureSampleData() {
 int main() {
     ensureSampleData();
 
+    // PORT lets you run several instances on different ports (the dev
+    // container's app previews rely on this); defaults to 8080 otherwise.
     const char* portEnv = std::getenv("PORT");
     int port = portEnv ? std::atoi(portEnv) : 8080;
 
+    // --- Set up one TCP listening socket -----------------------------
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
         std::cerr << "Socket creation failed\n";
         return 1;
     }
 
+    // Lets the server restart and rebind the same port immediately,
+    // instead of the OS holding it in TIME_WAIT for a while.
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     sockaddr_in address{};
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(port);
+    address.sin_addr.s_addr = INADDR_ANY;  // listen on all network interfaces
+    address.sin_port = htons(port);        // host-to-network byte order
 
     if (bind(server_fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0) {
         std::cerr << "Bind failed\n";
         return 1;
     }
 
-    if (listen(server_fd, 10) < 0) {
+    if (listen(server_fd, 10) < 0) {  // 10 = max queued pending connections
         std::cerr << "Listen failed\n";
         return 1;
     }
 
     std::cout << "Server running on port " << port << "\n";
 
+    // --- Main loop: accept one connection, handle it fully, repeat ----
+    // This server is intentionally single-threaded and handles requests
+    // one at a time (no worker threads, no async I/O). That keeps the
+    // code simple and, as a side effect, is exactly why `sessions` above
+    // doesn't need any locking.
     while (true) {
         sockaddr_in clientAddress{};
         socklen_t clientSize = sizeof(clientAddress);
@@ -295,6 +370,8 @@ int main() {
             continue;
         }
 
+        // Read the request in one shot. 4096 bytes is enough for the
+        // small forms this app has; a bigger upload would get truncated.
         char buffer[4096];
         ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
         if (bytesRead <= 0) {
@@ -304,6 +381,10 @@ int main() {
         buffer[bytesRead] = '\0';
         std::string request(buffer);
 
+        // Only the first line of the request is actually parsed here -
+        // e.g. "GET /report HTTP/1.1" becomes method="GET", path="/report".
+        // Headers (Cookie, Content-Type, ...) are read separately, on
+        // demand, by getCookieValue()/the body-extraction code below.
         std::istringstream requestStream(request);
         std::string method;
         std::string path;
@@ -311,6 +392,7 @@ int main() {
 
         std::string response;
         if (method == "GET") {
+            // --- Pages -----------------------------------------------
             if (path == "/") {
                 std::string body = readFile("public/index.html");
                 response = buildHttpResponse(body, "text/html");
@@ -320,11 +402,15 @@ int main() {
             } else if (path == "/login") {
                 std::string body = readFile("public/login.html");
                 response = buildHttpResponse(body, "text/html");
+            // --- JSON APIs ---------------------------------------------
             } else if (path == "/api/items") {
                 std::vector<Item> items = loadItems();
                 std::string body = buildJsonItems(items);
                 response = buildHttpResponse(body, "application/json");
             } else if (path == "/api/me") {
+                // Tells the frontend whether the visitor is logged in, and
+                // if so, who they are - used to show "Hi, <name>" in the
+                // header and to unlock the report form.
                 std::vector<User> users = loadUsers();
                 User* user = getSessionUser(request, users);
                 std::string body = user
@@ -332,6 +418,7 @@ int main() {
                     : "{\"loggedIn\":false}";
                 response = buildHttpResponse(body, "application/json");
             } else {
+                // --- Static files (style.css, browse.js, images, ...) --
                 std::string filePath = "public" + path;
                 std::string body = readFile(filePath);
                 if (body.empty()) {
@@ -341,6 +428,8 @@ int main() {
                 }
             }
         } else if (method == "POST") {
+            // The request body sits right after the blank line that ends
+            // the headers ("\r\n\r\n"); every POST route below needs it.
             std::string body;
             size_t headerEnd = request.find("\r\n\r\n");
             if (headerEnd != std::string::npos) {
@@ -348,6 +437,10 @@ int main() {
             }
 
             if (path == "/api/items") {
+                // Reporting an item requires being logged in. This is the
+                // one place that actually enforces it - the frontend also
+                // hides the report form when logged out, but that's just
+                // UX; this check is what actually protects the data.
                 std::vector<User> users = loadUsers();
                 User* sessionUser = getSessionUser(request, users);
                 if (!sessionUser) {
@@ -370,6 +463,9 @@ int main() {
                     response = buildHttpResponse("{\"status\":\"saved\"}", "application/json");
                 }
             } else if (path == "/api/signup") {
+                // Create a new account, then immediately log the user in
+                // (same as /api/login below: issue a token, remember it in
+                // `sessions`, and hand it back as a cookie).
                 std::string name = parseBodyValue(body, "name");
                 std::string phone = parseBodyValue(body, "phone");
                 std::string email = parseBodyValue(body, "email");
@@ -393,6 +489,8 @@ int main() {
                     response = buildHttpResponse("{\"status\":\"saved\"}", "application/json", 200, cookie);
                 }
             } else if (path == "/api/login") {
+                // Plain-text password compare (see the User struct note
+                // above about why passwords aren't hashed here).
                 std::string email = parseBodyValue(body, "email");
                 std::string password = parseBodyValue(body, "password");
                 std::vector<User> users = loadUsers();
@@ -406,6 +504,8 @@ int main() {
                     response = buildHttpResponse("{\"status\":\"ok\"}", "application/json", 200, cookie);
                 }
             } else if (path == "/api/logout") {
+                // Forget the session server-side, and tell the browser to
+                // drop the cookie too (Max-Age=0 expires it immediately).
                 std::string token = getCookieValue(request, "session");
                 if (!token.empty()) sessions.erase(token);
                 std::string cookie = "Set-Cookie: session=; Path=/; Max-Age=0; HttpOnly\r\n";
@@ -418,7 +518,7 @@ int main() {
         }
 
         send(clientSocket, response.c_str(), response.size(), 0);
-        close(clientSocket);
+        close(clientSocket);  // Connection: close above means one request per connection
     }
 
     close(server_fd);

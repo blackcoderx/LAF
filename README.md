@@ -48,6 +48,33 @@ PORT=8080 ./laf-server
 
 3. Open a browser at `http://localhost:8080`
 
+## Running on Windows
+
+`src/main.cpp` uses POSIX sockets (`arpa/inet.h`, `sys/socket.h`, `unistd.h`, ...), which is a Linux/macOS API. On Windows the easiest way to run this exact code, with no changes, is **WSL (Windows Subsystem for Linux)**:
+
+1. Install WSL (one-time setup, needs a restart): open PowerShell **as Administrator** and run:
+   ```powershell
+   wsl --install
+   ```
+2. After it restarts, open the "Ubuntu" app from the Start menu and set up a Linux username/password.
+3. Install a C++ compiler and `make` inside that Ubuntu shell:
+   ```bash
+   sudo apt update
+   sudo apt install -y build-essential
+   ```
+4. Get the project into WSL. Either `git clone` it there directly, or, if the folder is already on your Windows drive, `cd` into it through the `/mnt/c/...` path, e.g.:
+   ```bash
+   cd /mnt/c/Users/<you>/path/to/LAF
+   ```
+5. Build and run exactly as in "Compile and run" above:
+   ```bash
+   make
+   PORT=8080 ./laf-server
+   ```
+6. Open `http://localhost:8080` in your normal Windows browser - WSL forwards `localhost` automatically.
+
+If you'd rather not install WSL, the alternative is compiling natively with **MSYS2/MinGW-w64**, but that requires rewriting the networking code in `src/main.cpp` to use Winsock (`winsock2.h`, `WSAStartup`, `closesocket`, linking `-lws2_32`) instead of POSIX sockets, since Windows doesn't provide the POSIX socket headers this file currently includes. WSL avoids all of that and is the recommended path for this project.
+
 ## Notes
 
 - The server listens on `0.0.0.0` and uses the `PORT` environment variable.
