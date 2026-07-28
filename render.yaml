@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lost-and-found
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /
+    disk:
+      name: lost-and-found-data
+      mountPath: /app/data
+      sizeGB: 1

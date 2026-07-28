@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -O2
+CXXFLAGS = -std=c++17 -O2 -static-libgcc -static-libstdc++
 SRC = src/main.cpp
 OUT = laf-server
 
